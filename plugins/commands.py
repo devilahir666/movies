@@ -737,11 +737,11 @@ async def set_shortner_2(c, m):
         await save_group_settings(grp_id, 'shortner_two', URL)
         await save_group_settings(grp_id, 'api_two', API)
         await m.reply_text(f"<b><u>✅ sᴜᴄᴄᴇssꜰᴜʟʟʏ ʏᴏᴜʀ sʜᴏʀᴛɴᴇʀ ɪs ᴀᴅᴅᴇᴅ</u>\n\nᴅᴇᴍᴏ - {SHORT_LINK}\n\nsɪᴛᴇ - `{URL}`\n\nᴀᴘɪ - `{API}`</b>", quote=True)
-        user_id = m.from_user.id
-        user_info = f"@{m.from_user.username}" if m.from_user.username else f"{m.from_user.mention}"
-        link = (await c.get_chat(m.chat.id)).invite_link
-        grp_link = f"[{m.chat.title}]({link})"
-        log_message = f"#New_Shortner_Set_For_2nd_Verify\n\nName - {user_info}\nId - `{user_id}`\n\nDomain name - {URL}\nApi - `{API}`\nGroup link - {grp_link}"
+       # user_id = m.from_user.id
+        #user_info = f"@{m.from_user.username}" if m.from_user.username else f"{m.from_user.mention}"
+        #link = (await c.get_chat(m.chat.id)).invite_link
+        #grp_link = f"[{m.chat.title}]({link})"
+        #log_message = f"#New_Shortner_Set_For_2nd_Verify\n\nName - {user_info}\nId - `{user_id}`\n\nDomain name - {URL}\nApi - `{API}`\nGroup link - {grp_link}"
         await c.send_message(LOG_API_CHANNEL, log_message, disable_web_page_preview=True)
     except Exception as e:
         await save_group_settings(grp_id, 'shortner_two', SHORTENER_WEBSITE2)
@@ -1057,3 +1057,4 @@ async def verifyon(bot, message):
     
     await save_group_settings(grpid, 'is_verify', True)
     return await message.reply_text("Verification successfully enabled.")
+
