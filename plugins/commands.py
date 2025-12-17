@@ -298,33 +298,12 @@ async def start(client:Client, message):
         settings = await get_settings(grp_id , pm_mode=pm_mode)
         is_second_shortener = await db.use_second_shortener(user_id, settings.get('verify_time', TWO_VERIFY_GAP)) 
         is_third_shortener = await db.use_third_shortener(user_id, settings.get('third_verify_time', THREE_VERIFY_GAP))
-        if settings.get("is_verify", IS_VERIFY) and not user_verified or is_second_shortener or is_third_shortener:
-            verify_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
-            await db.create_verify_id(user_id, verify_id)
-            temp.CHAT[user_id] = grp_id
-            verify = await get_shortlink(f"https://telegram.me/{temp.U_NAME}?start=notcopy_{user_id}_{verify_id}_{file_id}", grp_id, is_second_shortener, is_third_shortener , pm_mode=pm_mode)
-            buttons = [[
-                InlineKeyboardButton(text="✅ ᴠᴇʀɪғʏ ✅", url=verify),
-                InlineKeyboardButton(text="ʜᴏᴡ ᴛᴏ ᴠᴇʀɪғʏ❓", url=settings['tutorial'])
-                ],[
-                InlineKeyboardButton(text="😁 ʙᴜʏ sᴜʙsᴄʀɪᴘᴛɪᴏɴ - ɴᴏ ɴᴇᴇᴅ ᴛᴏ ᴠᴇʀɪғʏ 😁", callback_data='seeplans'),
-            ]]
-            reply_markup=InlineKeyboardMarkup(buttons)
-            if await db.user_verified(user_id): 
-                msg = script.THIRDT_VERIFICATION_TEXT
-            else:            
-                msg = script.SECOND_VERIFICATION_TEXT if is_second_shortener else script.VERIFICATION_TEXT
-            d = await m.reply_text(
-                text=msg.format(message.from_user.mention, get_status()),
-                protect_content = False,
-                reply_markup=reply_markup,
-                parse_mode=enums.ParseMode.HTML
-            )
-            await asyncio.sleep(300) 
-            await d.delete()
-            await m.delete()
-            return
+        
+        # यहाँ हमने वेरिफिकेशन मैसेज को बाईपास कर दिया है
+        if False: # settings.get("is_verify", IS_VERIFY) and not user_verified...
+            pass
 
+    # "All Files" बटन के लिए शॉर्टनर लिंक सेटिंग
     if data and data.startswith("allfiles"):
         _, key = data.split("_", 1)
         files = temp.FILES_ID.get(key)
@@ -336,37 +315,78 @@ async def start(client:Client, message):
             user_id = message.from_user.id 
             grp_id = temp.CHAT.get(user_id)
             settings = await get_settings(grp_id, pm_mode=pm_mode)
+            
+            # यहाँ हर फाइल के लिए आपका Shrinkearn लिंक बनेगा
+            f_ptr = f"https://telegram.me/{temp.U_NAME}?start=file_{file.file_id}"
+            short_url = await get_shortlink(f_ptr, grp_id, False, False, pm_mode=pm_mode)
+            
             CAPTION = settings['caption']
             f_caption = CAPTION.format(
                 file_name=formate_file_name(file.file_name),
                 file_size=get_size(file.file_size),
                 file_caption=file.caption
             )
+            
+            # बटन में अब सीधा फाइल नहीं, बल्कि शॉर्टलिंक जाएगा
             btn = [[
-                InlineKeyboardButton("✛ ᴡᴀᴛᴄʜ & ᴅᴏᴡɴʟᴏᴀᴅ ✛", callback_data=f'stream#{file.file_id}')
+                InlineKeyboardButton("🚀 ᴅᴏᴡɴʟᴏᴀᴅ / ᴡᴀᴛᴄʜ ᴏɴʟɪɴᴇ 🚀", url=short_url)
             ]]
-            toDel = await client.send_cached_media(
-                chat_id=message.from_user.id,
-                file_id=file.file_id,
-                caption=f_caption,
+            
+            toDel = await message.reply_text(
+                text=f_caption,
                 reply_markup=InlineKeyboardMarkup(btn)
             )
             files_to_delete.append(toDel)
 
         delCap = "<b>ᴀʟʟ {} ғɪʟᴇs ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {} ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ ᴠɪᴏʟᴀᴛɪᴏɴs!</b>".format(len(files_to_delete), f'{FILE_AUTO_DEL_TIMER / 60} ᴍɪɴᴜᴛᴇs' if FILE_AUTO_DEL_TIMER >= 60 else f'{FILE_AUTO_DEL_TIMER} sᴇᴄᴏɴᴅs')
         afterDelCap = "<b>ᴀʟʟ {} ғɪʟᴇs ᴀʀᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {} ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ ᴠɪᴏʟᴀᴛɪᴏɴs!</b>".format(len(files_to_delete), f'{FILE_AUTO_DEL_TIMER / 60} ᴍɪɴᴜᴛᴇs' if FILE_AUTO_DEL_TIMER >= 60 else f'{FILE_AUTO_DEL_TIMER} sᴇᴄᴏɴᴅs')
-        replyed = await message.reply(
-            delCap
-        )
+        replyed = await message.reply(delCap)
         await asyncio.sleep(FILE_AUTO_DEL_TIMER)
         for file in files_to_delete:
-            try:
-                await file.delete()
-            except:
-                pass
-        return await replyed.edit(
-            afterDelCap,
-        )
+            try: await file.delete()
+            except: pass
+        return await replyed.edit(afterDelCap)
+
+    if not data:
+        return
+
+    # सिंगल फाइल के लिए शॉर्टनर लिंक सेटिंग
+    files_ = await get_file_details(file_id)           
+    if not files_:
+        return await message.reply('<b>⚠️ ᴀʟʟ ꜰɪʟᴇs ɴᴏᴛ ꜰᴏᴜɴᴅ ⚠️</b>')
+    
+    files = files_[0]
+    settings = await get_settings(grp_id , pm_mode=pm_mode)
+    
+    # सिंगल फाइल के लिए भी शॉर्टलिंक बनाना
+    f_ptr_single = f"https://telegram.me/{temp.U_NAME}?start=file_{file_id}"
+    short_url_single = await get_shortlink(f_ptr_single, grp_id, False, False, pm_mode=pm_mode)
+    
+    CAPTION = settings['caption']
+    f_caption = CAPTION.format(
+        file_name = formate_file_name(files.file_name),
+        file_size = get_size(files.file_size),
+        file_caption=files.caption
+    )
+    
+    btn = [[
+        InlineKeyboardButton("🚀 ᴅᴏᴡɴʟᴏᴀᴅ / ᴡᴀᴛᴄʜ ᴏɴʟɪɴᴇ 🚀", url=short_url_single)
+    ]]
+    
+    # यहाँ बॉट अब सीधी फाइल भेजने के बजाय शॉर्टलिंक वाला मैसेज भेजेगा
+    toDel = await message.reply_text(
+        text=f_caption,
+        reply_markup=InlineKeyboardMarkup(btn)
+    )
+    
+    delCap = "<b>ʏᴏᴜʀ ғɪʟᴇ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {} ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ ᴠɪᴏʟᴀᴛɪᴏɴs!</b>".format(f'{FILE_AUTO_DEL_TIMER / 60} ᴍɪɴᴜᴛᴇs' if FILE_AUTO_DEL_TIMER >= 60 else f'{FILE_AUTO_DEL_TIMER} sᴇᴄᴏɴᴅs')
+    afterDelCap = "<b>ʏᴏᴜʀ ғɪʟᴇ ɪs ᴅᴇʟᴇᴛᴇᴅ ᴀғᴛᴇʀ {} ᴛᴏ ᴀᴠᴏɪᴅ ᴄᴏᴘʏʀɪɢʜᴛ ᴠɪᴏʟᴀᴛɪᴏɴs!</b>".format(f'{FILE_AUTO_DEL_TIMER / 60} ᴍɪɴᴜᴛᴇs' if FILE_AUTO_DEL_TIMER >= 60 else f'{FILE_AUTO_DEL_TIMER} sᴇᴄᴏɴᴅs') 
+    
+    replyed = await message.reply(delCap, reply_to_message_id=toDel.id)
+    await asyncio.sleep(FILE_AUTO_DEL_TIMER)
+    await toDel.delete()
+    return await replyed.edit(afterDelCap)
+    
     if not data:
         return
 
@@ -1057,4 +1077,5 @@ async def verifyon(bot, message):
     
     await save_group_settings(grpid, 'is_verify', True)
     return await message.reply_text("Verification successfully enabled.")
+
 
