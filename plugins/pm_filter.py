@@ -19,6 +19,7 @@ from fuzzywuzzy import process
 BUTTONS = {}
 FILES_ID = {}
 CAP = {}
+IS_VERIFY = False
 
 # zishan [
 from database.jsreferdb import referdb
@@ -1660,3 +1661,4 @@ async def advantage_spell_chok(message):
         await message.delete()
     except:
         pass
+
